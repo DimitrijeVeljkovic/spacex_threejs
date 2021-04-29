@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launch spaceship</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="slike/rocket.png">
+</head>
+<body>
+
+    <canvas id="c"></canvas>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
+
+    <script src="./node_modules/three/build/three.js"></script>
+
+    <script type="module">
+
+        import * as THREE from './node_modules/three/build/three.module.js';
+        import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0,0.3,5);
+
+        var canvas = document.querySelector('#c');
+        const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+        
+        document.body.appendChild(renderer.domElement);
+
+        const light1 = new THREE.DirectionalLight(0xFFFFFF, 1.5, 800);
+        light1.position.set(-1,2,5);
+        light1.castShadow = true;
+        scene.add(light1);
+
+        const loader = new THREE.FontLoader();
+        var text = null;
+        loader.load('./node_modules/three/examples/fonts/helvetiker_regular.typeface.json', function(font){
+            const geo1 = new THREE.TextGeometry('Launch SpaceX spaceship!', {
+                font: font,
+                size: 0.3,
+                height: 0.04,
+                curveSegments: 30,
+                bevelEnabled: true,
+                bevelThickness: 0.04,
+                bevelSize: 0.001,
+                bevelOffset: 0,
+                bevelSegments: 3
+            });
+            const mat1 = new THREE.MeshNormalMaterial();
+            text = new THREE.Mesh(geo1,mat1);
+            text.position.set(-2.4,-1.4,2.5);
+            scene.add(text);
+        });
+
+        const geo2 = new THREE.SphereGeometry(2,100,100);
+        const texture2 = new THREE.TextureLoader().load("slike/zemlja.jpg");
+        const mat2 = new THREE.MeshLambertMaterial({map: texture2});
+        const mesh2 = new THREE.Mesh(geo2, mat2);
+        mesh2.castShadow = true;
+        mesh2.receiveShadow = true;
+        scene.add(mesh2);
+
+        const geo3 = new THREE.SphereGeometry(0.5,100,100);
+        const texture3 = new THREE.TextureLoader().load("slike/mesec.jpg");
+        const mat3 = new THREE.MeshLambertMaterial({map: texture3});
+        const mesh3 = new THREE.Mesh(geo3, mat3);
+        mesh3.castShadow = true;
+        mesh3.receiveShadow = true;
+        scene.add(mesh3);
+
+        const geo4 = new THREE.SphereGeometry(1.2,100,100);
+        const texture4 = new THREE.TextureLoader().load("slike/mars.jpg");
+        const mat4 = new THREE.MeshLambertMaterial({map: texture4});
+        const mesh4 = new THREE.Mesh(geo4, mat4);
+        mesh4.castShadow = true;
+        mesh4.receiveShadow = true;
+        mesh4.position.set(0,150,0);
+        scene.add(mesh4);
+
+        const loader2 = new GLTFLoader();
+        var rocket = null;
+        loader2.load('/spacex_starship/scene.gltf', function(gltf){
+            rocket = gltf.scene;
+            scene.add(rocket);
+            rocket.position.set(0,6,0);
+            rocket.scale.set(0.0003,0.0003,0.0003);
+            rocket.castShadow = true;
+            rocket.receiveShadow = true;
+        }); 
+
+        var satellite = null;
+        loader2.load('/satellite/scene.gltf', function(gltf){
+            satellite = gltf.scene;
+            scene.add(satellite);
+            satellite.scale.set(0.08,0.08,0.08);
+            rocket.castShadow = true;
+            rocket.receiveShadow = true;
+        });
+
+        var asteroids = [];
+        for(var i = 0; i < 15; i++){
+            loader2.load('/rock_big/scene.gltf', function(gltf){
+                    asteroids[i] = gltf.scene;
+                    scene.add(asteroids[i]);
+                    asteroids[i].scale.set(0.4,0.4,0.4);
+                    asteroids[i].position.x = getRndNum(-7,7);
+                    asteroids[i].position.y = getRndNum(3,147);
+                    asteroids[i].position.z = getRndNum(-4, -2);
+            });
+        }
+        
+        const tl = new TimelineMax();
+        var pressed = false;
+        document.body.onkeyup = function(e){
+            if(e.keyCode == 32){
+                if(!pressed){
+                    tl.to(rocket.position, 5, {y: 3.56, ease: Expo.easeOut});
+                    tl.to(camera.position, 2, {y: 2.26, ease: Expo.easeOut});
+                    tl.to(camera.position, 2, {z: 2.5, ease: Expo.easeOut}, "-=2");
+                    tl.to(rocket.position, 25, {y: 147.3, ease:Expo.easeInOut});
+                    tl.to(camera.position, 25, {y: 147.7, ease:Expo.easeInOut}, "-=25");
+                    tl.to(rocket.rotation, 4, {x: 3, ease:Expo.easeInOut}, "-=4");
+                    tl.to(camera.rotation, 3, {z: 3.1, ease:Expo.easeOut}, "+=1");
+                    tl.to(camera.position, 3, {y: 149.5, ease:Expo.easeOut});
+                    tl.to(camera.position, 3, {z: 4, ease:Expo.easeOut}, "-=3");
+                }
+                pressed = true;
+            }
+        }
+
+        window.addEventListener("resize", ()=>{
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        function getRndNum(min, max) {
+            return Math.random() * (max - min + 1)  + min;
+        }
+
+        const animate = function () {
+            requestAnimationFrame(animate);
+
+            mesh2.rotation.y += 0.005;
+            mesh3.rotation.x += 0.005;
+            mesh4.rotation.y -= 0.005;
+            mesh3.position.set( Math.cos(Date.now() * 0.0003) * 3.5 , 0 , Math.sin(Date.now() * 0.0003) * 3.5 );
+            if(rocket != null){
+                rocket.rotation.y += 0.005;
+            }
+            if(satellite != null){
+                satellite.rotation.x += 0.002;
+                satellite.rotation.y += 0.002;
+                satellite.position.set( Math.cos(Date.now() * 0.0002) * 2.2 , 150 , Math.sin(Date.now() * 0.0002) * 2.2 );
+            }
+
+            renderer.render(scene, camera);
+        };
+
+        animate();
+
+    </script>
+
+</body>
+</html>
